@@ -73,7 +73,7 @@
 	   var popupWidth = $("#popupArea").width();
 	   //centering
 	   $("#popupArea").css({
-	   "position": "absolute",
+	  //  "position": "absolute",
 	   "top": windowHeight/2-popupHeight/2,
 	   "left": windowWidth/2-popupWidth/2-12
 	   });
@@ -331,7 +331,7 @@
 
 </script>
 </head>  
-  <body class="no-sidebars">
+  <body class="no-sidebars" style="position: relative; background: #5B211A url('./css/images/bg.new.gif') repeat-x center top;">
     <div id="page">
     <div id="main" class="clearfix">    
       <div id="content">
@@ -339,15 +339,17 @@
            <div id="content-header">
                <div id="nametitle"><h1 class="headerName">Ηρώ Νικοπούλου</h1></div>
                  <div id="textwrap">
-                 	<div id="image"><img src='./css/images/irwPhoto.png' /></div>
+                 	<div id="image" style="margin-left: 51px !important; margin-top: 10px !important;">
+                    <img src='./css/images/irwPhoto.png' style="height: 243px;"/>
+                  </div>
              	    <div id="menulist">
                     <ul id="menu">
                     <li class="majorLinks"><a href="http://pictorial.ironikopoulou.gr">Εικαστικά</a></li>
                     <li class="majorLinks"><a href="http://literature.ironikopoulou.gr">Λογοτεχνία</a></li>
                     <li class="links"><a href="./content.php?nodeId=202"class="tabLink">Βιογραφικό</a></li>
                     <li class="links"><a href="./content.php?nodeId=210"class="tabLink">About Me/Translations</a></li>
-                    <li class="minorLinks"><a href="./content.php?nodeId=211"class="tabLink">Σύνδεσμοι</a></li>
-                    <li class="minorLinks"><a href="javascript:void(0);"class="formLink">Επικοινωνία</a></li>
+                    <li class="links"><a href="./content.php?nodeId=211"class="tabLink">Σύνδεσμοι</a></li>
+                    <li class="links"><a href="javascript:void(0);"class="formLink">Επικοινωνία</a></li>
                     </ul>
                     </div>
              		</div>

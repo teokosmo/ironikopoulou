@@ -1,14 +1,14 @@
 #image {
 	width: 216px;
 	float: left;
-	margin-left: 50px !important;
-	margin-left: 20px; /* for IE 6*/	
+	margin-left: 30px !important;
+	margin-left: 20px; /* for IE 6*/
 }
 #menu li {
 	list-style-type: none;
 	font-family: "Palatino Linotype", "Book Antiqua", Palatino, serif;
-	color: #FFDF95;
-	font-size: 32px;
+	color: #04148e;
+	font-size: 34px;
 	font-weight: bold;
 }
 /*
@@ -16,11 +16,11 @@ the last element of this type
 li.majorLinks:last-of-type
 */
 li.majorLinks{
-	padding-bottom: 5%;
+	padding-bottom: 1rem;
 }
 
 li.links{
-	padding-bottom: 4%;
+	padding-bottom: .8rem;
 }
 
 li.minorLinks{
@@ -31,10 +31,10 @@ li.minorLinks{
 	text-align: center;
 }
 #menulist {
-	text-align: center;
-	width: 330px;
+	text-align: left;
+	width: 320px;
 	float: left;
-	padding-top: 150px;
+	padding-top: 25px;
 }
 a {
 	outline:0px;
@@ -42,7 +42,8 @@ a {
 #textwrap {
 	display:block;
 	width: 600px;
-overflow:hidden;
+  overflow:hidden;
+  clear:both;
 }
 
 /** Font styles 
@@ -56,7 +57,11 @@ body {
    */
   font: 13px/1.5em "Palatino Linotype", sans-serif;  /* 13px/1.5em : set font-size/line-spacing */
   letter-spacing:0.03em;
-  background:#5B211A url('images/bg.gif') repeat-x center top;
+  /* background: #5B211A url('images/bg.gif') repeat-x center top; */
+  background-image: url(images/bg.png);
+  background-repeat: no-repeat;
+  background-size: cover;
+  height: 100%;
 }
 
 /* Links */
@@ -220,19 +225,19 @@ div.status {
 	font-size:28px;
 	font-family:"Palatino Linotype",serif;
 	font-weight: bold;
-	color:#FFDF95;
+	color: #84112b;
 }
 .links a{
 	font-size:20px;
 	font-family:"Palatino Linotype",serif;
 	font-weight: bold;
-	color:#FFDF95;
+	color: #84112b;
 }
 .minorLinks a{
 	font-size:14px;
 	font-family:"Palatino Linotype",serif;
 	font-weight: bold;
-	color:#FFDF95;
+	color: #cc8f00;
 }
 
 
@@ -240,7 +245,7 @@ div.status {
 	font-family:"Palatino Linotype",serif;
 	font-size:38px;
 	font-weight: bold;
-	color:#FFDF95;
+	color: #84112b;
 	float: left;
 } 
 
@@ -251,8 +256,7 @@ div.status {
 	color:#FFDF95;
 	text-align: right;
 	width: 600px;
-	padding-top: 25px;
-height:50px;
+	height:50px;
 } 
 
 img{
