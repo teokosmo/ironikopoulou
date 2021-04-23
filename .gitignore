@@ -37,13 +37,15 @@
 /.eslintrc.json
 /.gitattributes
 /.htaccess
-/autoload.php
 /composer.json
 /composer.lock
 /example.gitignore
-/index.php
 /LICENSE.txt
 /README.txt
 /robots.txt
-/update.php
 /web.config
+
+
+# Installation specific ignores
+/pictorial/sites/*/files
+/pictorial/*/cache
