@@ -1,0 +1,9 @@
+<?php
+// $Id: zoomify_image.module,v 1.1.2.2.4.3 2009/05/11 07:36:20 kratib Exp $
+
+function zoomify_image_zoomify_images($node) {
+  if ($node->type != 'image') return null;
+  $image = db_fetch_object(db_query('SELECT f.fid, f.filepath FROM {image} i INNER JOIN {files} f ON i.fid = f.fid WHERE nid=%d AND filename="_original" AND status=1', $node->nid));
+  return array($image->fid => $image->filepath);
+}
+

@@ -1,0 +1,465 @@
+<?php
+// $Id: zoomify.module,v 1.1.2.2.2.2.2.34 2009/11/03 18:52:04 kratib Exp $
+
+require_once('pathinfo_filename.inc');
+require_once('rrmdir.inc');
+require_once('zoomify.inc');
+
+define('ZOOMIFY_BACKEND_PHP', 1);
+define('ZOOMIFY_BACKEND_PYTHON', 2);
+define('ZOOMIFY_BACKEND_MANUAL', 3);
+
+define('ZOOMIFY_TOOLBAR_HEIGHT', 20);
+
+/**
+ * Implementation of hook_menu().
+ */
+function zoomify_menu() {
+  $items['admin/settings/zoomify'] = array(
+    'title' => 'Zoomify settings',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('zoomify_admin_settings'),
+    'access arguments' => array('administer site configuration'),
+    'type' => MENU_NORMAL_ITEM,
+    'description' => 'Zoomify module settings.',
+  );
+  $items['node/%zoomify/zoomify'] = array(
+    'title' => 'Zoomify',
+    'page callback' => 'zoomify_display',
+    'page arguments' => array(1),
+    'access arguments' => array('access content'),
+    'type' => MENU_LOCAL_TASK,
+    'description' => 'View image using Zoomify viewer.',
+    'weight' => 10,
+  );
+  return $items;
+}
+
+/**
+ * Menu loader function to load a Zoomify-enabled node.
+ */
+function zoomify_load($nid) {
+  if (!variable_get('zoomify_showtab', TRUE)) return FALSE;
+  if (($node = node_load($nid)) === FALSE) return FALSE;
+  return zoomify_check($node) ? $node : FALSE;
+}
+
+/**
+ * API function to check if a node is Zoomify-enabled.
+ */
+function zoomify_check($node) {
+  $types = variable_get('zoomify_types', NULL);
+  if (isset($types) && !@$types[$node->type]) return FALSE;
+  if (!is_dir(_zoomify_nodepath($node))) return FALSE;
+  $images = _zoomify_images($node);
+  if (!empty($images)) foreach ($images as $fid => $filepath) {
+    if (file_exists(_zoomify_filepath($node, $fid) .'/Image.md5')) return TRUE;
+  }
+  return FALSE;
+}
+
+/**
+ * Form callback for Zoomify admin settings.
+ */
+function zoomify_admin_settings() {
+  $options = array(
+    ZOOMIFY_BACKEND_PHP => t('PHP (might not be suitable for very large images)'),
+    ZOOMIFY_BACKEND_PYTHON => t('Python (requires <a href="@url">ZoomifyImage</a> Python package)', array('@url' => 'http://sourceforge.net/projects/zoomifyimage/')),
+  );
+  if (function_exists('zip_open')) {
+    $options[ZOOMIFY_BACKEND_MANUAL] = t('None (node creator is responsible for uploading tiled images in a Zip archive)');
+  }
+  else {
+    drupal_set_message('The option to upload your own tiles is disabled because the PHP Zip extension is not loaded.', 'warning', FALSE);
+  }
+  $form['zoomify_backend'] = array(
+    '#type' => 'radios',
+    '#title' => t('Tiling backend'),
+    '#options' => $options,
+    '#default_value' => variable_get('zoomify_backend', ZOOMIFY_BACKEND_PHP),
+  );
+  $form['zoomify_backend_python'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Full path to ZoomifyImage package'),
+    '#default_value' => variable_get('zoomify_backend_python', getcwd() .'/'. drupal_get_path('module', 'zoomify') .'/ZoomifyImage'),
+    '#description' => t('Not needed if Python processing backend is not selected.'),
+  );
+  global $base_url;
+  $form['zoomify_applet'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Relative URL to Flash applet'),
+    '#default_value' => variable_get('zoomify_applet', drupal_get_path('module', 'zoomify') .'/ZoomifyViewer.swf'),
+    '#description' => t('The relative URL that leads to the Zoomify Flash applet as accessed from a browser. The site domain name is automatically prefixed to this path to yield a full URL.'),
+    '#field_prefix' => $base_url . '/',
+  );
+  $form['zoomify_minimum_width'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Minimum width'),
+    '#default_value' => variable_get('zoomify_minimum_width', 1024),
+    '#description' => t('Minimum image width that will be zoomified.'),
+    '#field_suffix' => t('px'),
+    '#size' => 12,
+  );
+  $form['zoomify_minimum_height'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Minimum height'),
+    '#default_value' => variable_get('zoomify_minimum_height', 768),
+    '#description' => t('Minimum image height that will be zoomified.'),
+    '#field_suffix' => t('px'),
+    '#size' => 12,
+  );
+  $form['zoomify_width'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Frame width'),
+    '#default_value' => variable_get('zoomify_width', '800'),
+    '#description' => t('Width of the Zoomify frame.'),
+    '#field_suffix' => t('px'),
+    '#size' => 12,
+  );
+  $form['zoomify_height'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Frame height'),
+    '#default_value' => variable_get('zoomify_height', '600'),
+    '#description' => t('Height of the Zoomify frame.'),
+    '#field_suffix' => t('px'),
+    '#size' => 12,
+  );
+  $form['zoomify_fixframe'] = array(
+    '#title' => t('Fix frame size'),
+    '#type' => 'checkbox',
+    '#default_value' => variable_get('zoomify_fixframe', TRUE),
+    '#description' => t('Check this OFF to allow the Zoomify Viewer frame to be resized to fit the image\'s aspect ratio.'),
+  );
+  $form['zoomify_showtab'] = array(
+    '#title' => t('Show tab'),
+    '#type' => 'checkbox',
+    '#default_value' => variable_get('zoomify_showtab', TRUE),
+    '#description' => t('Check this OFF if you are showing the Zoomify applet in your default view and thus don\'t need the extra tab.'),
+  );
+  $form['zoomify_types'] = array(
+    '#title' => t('Content types'),
+    '#type' => 'checkboxes',
+    '#options' => node_get_types('names'),
+    '#default_value' => variable_get('zoomify_types', array()),
+    '#description' => t('Content types that the module will intercept to check for images.'),
+  );
+  $form['zoomify_flashvars'] = array(
+    '#title' => t('Extra FlashVars'),
+    '#type' => 'textarea',
+    '#description' => t('Additional variables that will be passed to the Zoomify viewer, separated by ampersands (&). For example: <code>zoomifyNavigatorVisible=false</code>. 
+                         The full list of variables is poorly documented but you can <a href="@faq">find it here</a>.', array('@faq' => 'http://www.zoomify.com/support.htm#a20081222_2050')),
+    '#default_value' => variable_get('zoomify_flashvars', NULL),
+  );
+
+  return system_settings_form($form);
+}
+
+/**
+ * Validate function for Zoomify admin settings form.
+ */
+function zoomify_admin_settings_validate($form, $form_state) {
+  if (!empty($form_state['values']['zoomify_applet'])) {
+    global $base_url;
+    $path = $base_url .'/'. $form_state['values']['zoomify_applet'];
+    if (($error = _zoomify_url_exists($path)) !== TRUE) {
+      drupal_set_message(t('The URL %path does not exist, error reported is %error. The setting will still be saved, because the URL checking function has been known to fail in some cases. Caveat emptor!', 
+        array('%path' => $path, '%error' => $error)), 'warning'
+      );
+    }
+  }
+  if ($form_state['values']['zoomify_backend'] == ZOOMIFY_BACKEND_PYTHON) {
+    $path = $form_state['values']['zoomify_backend_python'];
+    if (!file_exists($path .'/ZoomifyFileProcessor.py')) {
+      form_set_error('zoomify_backend_python', t('The path %path does not contain ZoomifyFileProcessor.py. Please make sure to extract the ZoomifyImage package.', 
+        array('%path' => $path)
+      ));
+    }
+  }
+}
+
+/**
+ * Helper function to check for existence of URL.
+ * Based on code found in Private Upload module (http://drupal.org/project/private_upload) that solves the same issue.
+ */
+function _zoomify_url_exists($url) {
+  $socket_open_timeout = 30;
+  $read_data_timeout   = 10;
+  $max_chunk           = 1024;
+  $status_codes        = array('200', '302'); // see function header for code details
+               
+  // Parse and open a socket to the requested resource.
+  $url_info = parse_url($url); 
+  $port = isset($url_info['port']) ? $url_info['port'] : 80;
+  $fp = fsockopen($url_info['host'], $port, $errno, $errstr, $socket_open_timeout);
+
+  if (!$fp) {
+    return $errstr; // Failure
+  }
+
+  stream_set_timeout($fp, $read_data_timeout);
+
+  // Request resource headers.
+  $head = "HEAD ".@$url_info['path']."?".@$url_info['query'];
+  $head .= " HTTP/1.0\r\nHost: ".@$url_info['host']."\r\n\r\n";
+  fputs($fp, $head);
+
+  // Read resource headers.
+  if ($header = trim(fgets($fp, $max_chunk))) {
+    $header_array = explode(': ',$header);
+    $header_type = $header_array[0];
+                                                                 
+    foreach ($status_codes as $status_code) {
+      if (strstr($header_type, $status_code)) {
+        fclose($fp);
+        return TRUE; // Success - file is publicly accessible
+      }
+    } 
+  }
+
+  fclose($fp);
+  return $header_type; // Failure
+}
+
+/**
+ * Implementation of hook_form_alter().
+ */ 
+function zoomify_form_alter(&$form, $form_state, $form_id) {
+  if (variable_get('zoomify_backend', ZOOMIFY_BACKEND_PHP) != ZOOMIFY_BACKEND_MANUAL) return;
+  if (!isset($form['type']) || @$form['type']['#value'] .'_node_form' != $form_id) return;
+  $types = variable_get('zoomify_types', NULL);
+  if (isset($types) && !in_array($form['type']['#value'], array_filter($types))) return;
+ 
+  // Get the current images from the node if present.
+  $form['#attributes'] = array('enctype' => "multipart/form-data");
+  $form['zoomify'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Zoomify tiles'),
+    '#description' => t('For each image, please upload a Zip archive that contains the image\'s tiles. The file ImageProperties.xml should be located at the root of each archive.'),
+  );
+  if (isset($form['#node']) && isset($form['#node']->nid)) {
+    foreach (_zoomify_images($form['#node']) as $fid => $filepath) {
+      $description = _zoomify_identical($form['#node'], $fid, $filepath) ? t('The tiles for this image are up to date.') : t('The tiles for this image are NOT up to date.');
+      $form['zoomify'][$fid] = array(
+        '#type' => 'file',
+        '#title' => t('Tiles for %image', array('%image' => basename($filepath))),
+        '#description' => $description,
+      );
+    }
+  }
+  $form['zoomify']['new'] = array(
+    '#type' => 'file',
+    '#title' => isset($fid) ? t('Tiles for new image (if any)') : t('Tiles for new image'),
+  );
+  $form['#validate'][] = 'zoomify_tiles_upload_validate';
+  $form['#submit'][] = 'zoomify_tiles_upload_submit';
+}
+
+/**
+ * Validate function for tiles.
+ */
+function zoomify_tiles_upload_validate($form, &$form_state) {
+  if (isset($form['#node']) && isset($form['#node']->nid)) foreach (_zoomify_images($form['#node']) as $fid => $filepath) {
+    $fids[] = $fid;
+  }
+  $fids[] = 'new';
+  foreach ($fids as $fid) {
+    zoomify_tiles_upload_validate_one($fid);
+  }
+}
+
+/**
+ * Validate function for one tile file. 
+ */
+function zoomify_tiles_upload_validate_one($fid) {
+  if (empty($_FILES['files']['name'][$fid])) return;
+  $source = $_FILES['files']['name'][$fid];
+
+  // Handle PHP file upload errors.
+  switch ($_FILES['files']['error'][$fid]) {
+  case UPLOAD_ERR_OK:
+    break;
+  case UPLOAD_ERR_FORM_SIZE:
+  case UPLOAD_ERR_INI_SIZE:
+    form_set_error($fid, t('The file %file could not be saved, because it exceeds %maxsize, the maximum allowed size for uploads. Please choose a smaller file or notify your site administrator.',
+      array('%file' => $source, '%maxsize' => format_size(file_upload_max_size())))
+    );
+    return;
+  case UPLOAD_ERR_PARTIAL:
+    form_set_error($fid, t('The file %file could not be saved, because the upload did not complete. Please try again or notify your site administrator.', array('%file' => $source)));
+    return;
+  case UPLOAD_ERR_NO_FILE:
+    form_set_error($fid, t('No file was uploaded. Please choose a file to upload.'));
+    return;
+  case UPLOAD_ERR_NO_TMP_DIR:
+    form_set_error($fid, t('The file %file could not be saved, because the temporary upload folder is missing. Please notify your site administrator.', array('%file' => $source)));
+    return;
+  case UPLOAD_ERR_CANT_WRITE:
+    form_set_error($fid, t('The file %file could not be saved, because a failure occurred while writing it to the temporary folder. Please notify your site administrator.', array('%file' => $source)));
+    return;
+  case UPLOAD_ERR_EXTENSION:
+    form_set_error($fid, t('The file %file could not be saved, because its extension is disallowed. Please notify your site administrator.', array('%file' => $source)));
+    return;
+  default:
+    form_set_error($fid, t('The file %file could not be saved. An unknown error %error has occurred. Please notify your site administrator.',
+      array('%file' => $source, '%error' => $_FILES['files']['error'][$fid]))
+    );
+    return;
+  }
+
+  // Verify that the file is an archive and contains ImageProperties.xml.
+  $zip = new ZipArchive;
+  if ($zip->open($_FILES['files']['tmp_name'][$fid]) !== TRUE) {
+    form_set_error($fid, t('The file %file does not seem to be a valid Zip archive. Please upload a valid file.', array('%file' => $source)));
+    return;
+  }
+  if ($zip->locateName('ImageProperties.xml', ZIPARCHIVE::FL_NOCASE|ZIPARCHIVE::FL_NODIR) === FALSE) {
+    form_set_error($fid, t('The archive %file does not contain ImageProperties.xml. Please upload a valid archive of Zoomify tiles.', array('%file' => $source)));
+    //return;
+  }
+  $zip->close();
+}
+
+/**
+ * Submit function for tiles.
+ */
+function zoomify_tiles_upload_submit($form, &$form_state) {
+  if (isset($form['#node']) && isset($form['#node']->nid)) foreach (_zoomify_images($form['#node']) as $fid => $filepath) {
+    $fids[] = $fid;
+  }
+  $fids[] = 'new';
+  foreach ($fids as $fid) {
+    if (!empty($_FILES['files']['tmp_name'][$fid])) {
+      $form_state['values']['zoomify'][$fid] = $_FILES['files']['tmp_name'][$fid];
+    }
+    unset($form_state['values'][$fid]);
+  }
+}
+
+/**
+ * Implementation of hook_theme().
+ */
+function zoomify_theme() {
+  return array(
+    'zoomify' => array(
+      'arguments' => array('node' => NULL, 'fid' => NULL, 'filepath' => NULL),
+    ),
+    'zoomify_page' => array(
+      'arguments' => array('node' => NULL),
+    ),
+  );
+}
+
+/**
+ * Implementation of hook_nodeapi().
+ */
+function zoomify_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
+  // Check for included content types only.
+  $types = variable_get('zoomify_types', NULL);
+  if (isset($types) && !@$types[$node->type]) return;
+
+  switch ($op) {
+  case 'insert':
+    _zoomify_insert_node($node);
+    break;
+  case 'delete':
+    _zoomify_delete_node($node);
+    break;
+  case 'update':
+    _zoomify_update_node($node);
+    break;
+  }
+}
+
+/**
+ * Helper function to render a Zoomify page.
+ */
+function zoomify_display($node) {
+  return theme('zoomify_page', $node);
+}
+
+/**
+ * Theme function to render a Zoomify page.
+ */
+function theme_zoomify_page($node) {
+  $output = '<div class="zoomify-page zoomify-page-node-'.str_replace('_', '-', $node->type).' zoomify-page-node-'.$node->nid.'">';
+  foreach (_zoomify_images($node) as $fid => $filepath) {
+    $output .= theme('zoomify', $node, $fid, $filepath);
+  }
+  $output .= '</div>';
+  return $output;
+}
+
+/**
+ * Theme function to render one Zoomify viewer.
+ */
+function theme_zoomify($node, $fid, $filepath) {
+  global $base_url;
+    
+  $viewer = $base_url .'/'. variable_get('zoomify_applet', drupal_get_path('module', 'zoomify') .'/ZoomifyViewer.swf');
+  $image = file_create_url(_zoomify_filepath($node, $fid));
+  $info = image_get_info($filepath);
+  $image_width = $info['width'];
+  $image_height = $info['height'];
+  $max_width = variable_get('zoomify_width', 800);
+  $max_height = variable_get('zoomify_height', 600);
+ if (variable_get('zoomify_fixframe', TRUE)) {
+    $width = $max_width;
+    $height = $max_height;
+  }
+  else if ($image_width > $image_height) { // keep aspect ratio
+    $width = $max_width;
+    $height = ceil($max_width * $image_height / $image_width);
+  }
+  else {
+    $height = $max_height + ZOOMIFY_TOOLBAR_HEIGHT;
+    $width = ceil($max_height * $image_width / $image_height);
+  }
+  
+  $flashVars = variable_get('zoomify_flashvars', NULL);
+  if (!empty($flashVars)) $flashVars = '&'. $flashVars;
+  $nid = $node->nid;
+  $type = str_replace('_', '-', $node->type);
+  return <<<EOS
+<div class="zoomify zoomify-node-$type zoomify-node-$nid zoomify-file-$fid">
+<object class="zoomify-viewer zoomify-viewer-node-$type zoomify-viewer-node-$nid zoomify-viewer-file-$fid" classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000" codebase="http://download.macromedia.com/pub/shockwave/cabs/flash/swflash.cab#version=6,0,40,0" id="theMovie" width="$width" height="$height">
+  <param name="FlashVars" value="zoomifyImagePath=${image}${flashVars}">
+  <param name="menu" value="false">
+  <param name="src" value="$viewer">
+  <embed flashvars="zoomifyImagePath=${image}${flashVars}" src="$viewer" menu="false" pluginspage="http://www.macromedia.com/shockwave/download/index.cgi?P1_Prod_Version=ShockwaveFlash" name="theMovie" width="$width" height="$height"></embed>
+</object>
+</div>
+EOS;
+}
+
+/**
+ * Implementation of hook_file_download().
+ */
+function zoomify_file_download($filepath) {
+  $filepath = file_create_path($filepath);
+  if (strpos($filepath, file_directory_path().'/zoomify') !== FALSE) {
+    return array(
+      'Content-Length: ' . filesize($filepath),
+    );
+  }
+}
+
+/**
+ * Implementation of hook_action_info().
+ */
+function zoomify_action_info() {
+  return array(
+    'zoomify_tile_action' => array(
+      'description' => t('Create or update Zoomify tiles'),
+      'type' => 'node',
+      'configurable' => FALSE,
+    ),
+  );
+}
+
+/**
+ * Action function for zoomify_tile_action.
+ */
+function zoomify_tile_action(&$object, $context) {
+  _zoomify_update_node($object);
+}
+

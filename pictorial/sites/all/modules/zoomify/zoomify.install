@@ -1,0 +1,32 @@
+<?php
+// $Id: zoomify.install,v 1.1.2.1.4.6 2009/07/08 01:53:48 kratib Exp $
+
+require_once('rrmdir.inc');
+require_once('zoomify.inc');
+
+function zoomify_update_6000() {
+  // Update settings to the latest version.
+  $applet = variable_get('zoomify_applet', '');
+  if (!empty($applet)) {
+    variable_set('zoomify_applet', preg_replace('/^https?:\/\/(?:[-\w\.]+)+(?::\d+)?(?:\/([\w\/_\.]*(?:\?\S+)?)?)?$/', '$1', $applet));
+  }
+  variable_set('zoomify_width', variable_get('zoomify_width', 800)+0);
+  variable_set('zoomify_height', variable_get('zoomify_height', 600)+0);
+  return array();
+}
+
+function zoomify_uninstall() {
+  variable_del('zoomify_minimum_width');
+  variable_del('zoomify_minimum_height');
+  variable_del('zoomify_width');
+  variable_del('zoomify_height');
+  variable_del('zoomify_applet');
+  variable_del('zoomify_backend');
+  variable_del('zoomify_backend_python');
+  variable_del('zoomify_showtab');
+  variable_del('zoomify_fixframe');
+  variable_del('zoomify_types');
+  variable_del('zoomify_flashvars');
+  rrmdir(_zoomify_basepath());
+}
+

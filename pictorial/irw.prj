@@ -1,0 +1,52 @@
+[Project ID]
+Signature=UE Proj: v.1
+[Project Information]
+Use Relative Directory=1
+Relative to Project File=1
+Project Start=DA0702000200020013000C003000000036
+Include Sub Directories=1
+Project Tagfile=
+Project Wordfile=
+Filter=
+Create Tagfile=0
+Working Time=182210
+[Files]
+0=D:\xampp\htdocs\workspace\irw\
+[Folders]
+D:\xampp\htdocs\workspace\irw\ - sites - all - modules - wysiwyg - editors=1
+D:\xampp\htdocs\workspace\irw\ - sites - all - libraries - tinymce - jscripts - tiny_mce=1
+D:\xampp\htdocs\workspace\irw\ - themes - garland=1
+D:\xampp\htdocs\workspace\irw\ - sites - all - modules - video - types - uploadfield=1
+D:\xampp\htdocs\workspace\irw\ - sites - default - files=1
+D:\xampp\htdocs\workspace\irw\ - sites - all - modules - views - theme=1
+D:\xampp\htdocs\workspace\irw\ - sites - all - modules - views - modules=1
+D:\xampp\htdocs\workspace\irw\ - sites - default - files - images=1
+D:\xampp\htdocs\workspace\irw\ - sites - all=1
+D:\xampp\htdocs\workspace\irw\ - sites - all - themes - basic=1
+D:\xampp\htdocs\workspace\irw\ - sites - all - modules - dhtml_menu=1
+D:\xampp\htdocs\workspace\irw\ - sites=1
+D:\xampp\htdocs\workspace\irw\ - sites - all - themes=1
+[Open Files]
+Active File Display Mode=3
+Active File Index=4
+Open File Line0=1161
+Open File Line1=2310
+Open File Line2=1551
+Open File Line3=0
+Open File Line4=0
+Open File Pos0=1965
+Open File Pos1=2896
+Open File Pos2=2378
+Open File Pos3=649
+Open File Pos4=1059
+Open File Window Pos0=0,1,-1,-1,-4,-30,0,0,629,544
+Open File Window Pos1=0,1,-1,-1,-4,-30,22,29,747,573
+Open File Window Pos2=0,1,-1,-1,-4,-30,66,87,731,631
+Open File Window Pos3=0,1,-1,-1,-4,-30,88,116,736,660
+Open File Window Pos4=2,3,-1,-1,-4,-30,22,29,546,573
+Open File0=D:\xampp\htdocs\workspace\irw\sites\all\themes\basic\page.tpl.php
+Open File1=D:\xampp\htdocs\workspace\irw\sites\all\themes\basic\css\style.css
+Open File2=D:\xampp\htdocs\workspace\irw\sites\all\themes\basic\css\layout.css
+Open File3=C:\Documents and Settings\teo\Favorites\BACK_UP_OLD_HDD\PLANODION\HRW\sourceCode_workarounds.txt
+Open File4=C:\Documents and Settings\teo\Favorites\BACK_UP_OLD_HDD\WACOM\Mod_NFeat_Bug.txt
+Open File5=

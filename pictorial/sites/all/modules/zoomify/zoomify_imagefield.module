@@ -1,0 +1,104 @@
+<?php
+// $Id: zoomify_imagefield.module,v 1.1.2.2.4.5 2009/07/06 08:05:39 kratib Exp $
+
+include_once('zoomify.inc');
+
+function zoomify_imagefield_zoomify_images($node) {
+  $type = content_types($node->type);
+  if (empty($type['fields'])) return null;
+  $images = array();
+  foreach ($type['fields'] as $field) {
+    if ( ( ($field['type'] == 'image') || // old-style imagefields
+           ($field['type'] == 'filefield' && $field['widget']['module'] == 'imagefield') // new-style imagefields
+         ) && $node->$field['field_name']
+       ) {
+      $node_field = $node->$field['field_name'];
+      foreach ($node_field as $file) {
+        $images[$file['fid']] = $file['filepath'];
+      }
+    }
+  }
+  return $images;
+}
+
+function zoomify_imagefield_field_formatter_info() {
+  $formatters = array();
+  $formatters['zoomify'] = array(
+    'label' => t('Zoomify'),
+    'field types' => array('image'),
+  );
+  if (module_exists('imagecache')) {
+    foreach (imagecache_presets() as $preset) {
+      $formatters['zoomify_'. $preset['presetname']] = array(
+        'label' => t('Zoomify'). ': '. t($preset['presetname']),
+        'field types' => array('image'),
+      );
+    }
+  }
+  return $formatters;
+}
+
+function theme_zoomify_imagefield_formatter($element) {
+  return zoomify_imagefield_field_formatter($element['#field_name'], $element['#item'], $element['#formatter']);
+}
+
+function zoomify_imagefield_field_formatter($field, $item, $formatter) {
+  if (!isset($item['fid'])) return '';
+  $file = field_file_load($item['fid']);
+  $item = array_merge($item, $file);
+  if ($formatter == 'zoomify') return theme('imagefield_image_zoomify', $field, $item);
+  if (!module_exists('imagecache')) return '';
+  if (strpos($formatter, 'zoomify_') !== 0) return '';
+  $namespace = substr($formatter, strlen('zoomify_'));
+  return theme('imagefield_image_imagecache_zoomify', $namespace, $field, $item);
+}
+
+function zoomify_imagefield_theme() {
+  $theme = array(
+    'imagefield_image_zoomify' => array(
+      'arguments' => array(
+        'field' => NULL,
+        'item' => NULL,
+      ),
+    ),
+    'imagefield_image_imagecache_zoomify' => array(
+      'arguments' => array(
+        'namespace' => NULL,
+        'field' => NULL,
+        'item' => NULL,
+        'attributes' => NULL,
+      ),
+    ),
+    'zoomify_imagefield_formatter_zoomify' => array(
+      'arguments' => array('element' => NULL),
+      'function' => 'theme_zoomify_imagefield_formatter',
+    ),
+  );
+  if (module_exists('imagecache')) {
+    foreach (imagecache_presets() as $preset) {
+      $theme['zoomify_imagefield_formatter_zoomify_'.$preset['presetname']] = array(
+        'arguments' => array('element' => NULL),
+        'function' => 'theme_zoomify_imagefield_formatter',
+      );
+    }
+  }
+  return $theme;
+}
+
+function theme_imagefield_image_zoomify($field, $item) {
+  $node = node_load($item['nid']);
+  $pathinfo = pathinfo($item['filepath']);
+  $image = '<img src="'.url(_zoomify_filepath($node, $item['fid']).'/TileGroup0/0-0-0.'.strtolower($pathinfo['extension'])).'"'.
+           ' alt="'.check_plain($item['alt']).'"'.
+           ' title="'.check_plain($item['title']).'"'.
+           ' />';
+  $output = l($image, 'node/'.$item['nid'].'/zoomify', array('html' => TRUE));
+  return $output;
+}
+
+function theme_imagefield_image_imagecache_zoomify($namespace, $field, $item, $attributes = NULL) {
+  $image = theme('imagecache', $namespace, $item['filepath'], $item['alt'], $item['title'], $attributes);
+  $output = l($image, 'node/'.$item['nid'].'/zoomify', array('html' => TRUE));
+  return $output;
+}
+
