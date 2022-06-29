@@ -168,8 +168,8 @@ li.leaf , li.collapsed , li.expanded {
 }
 
 #left-sidebar-content{
-	height:600px;
-	overfow-x:hidden;
+	height:355px;
+	overflow-x:hidden;
 	overflow-y:auto;
 	width:230px;
 }

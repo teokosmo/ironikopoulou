@@ -28,7 +28,7 @@ function checkLayoutDimensions(){
 															parseInt((secondSideBarDefaultWidth*zoomOut[zoomLevel]) - sidebarPaddingLeft ), 
 															parseInt((defaultPageHeight*zoomOut[zoomLevel]) - sidebarPaddingTop ),
 															parseInt(contentInnerDefaultWidth*(zoomOut[zoomLevel])),
-															parseInt((contentAreaDefaultHeight*zoomOut[zoomLevel]) - tabsHeight), 
+															parseInt((contentAreaDefaultHeight*zoomOut[zoomLevel])), 
 															sidebarPaddingTop,
 															sidebarPaddingLeft,
 															parseInt(contentInnerMarginLeft*zoomOut[zoomLevel]));		
@@ -49,8 +49,8 @@ $(document).ready(function()
 	contentInnerDefaultWidth = $('#content-inner').width();
 //664px #content height
 	defaultPageHeight =  $('#content').height();
-	contentAreaDefaultHeight = $('#content-area').height();
   tabsHeight = $('.tabs').height() || 0;
+	contentAreaDefaultHeight = $('#content-area').height() - tabsHeight;
 	zoomOut=[1,0.85,0.8];
 	divInfoElm=document.getElementById('divInfo');
 	pageElm=document.getElementById('page');
