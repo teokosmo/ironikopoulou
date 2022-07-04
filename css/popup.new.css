@@ -27,7 +27,7 @@ z-index:1;
 	padding:12px;
 	font-size:13px;
 	overflow:auto;
-	background: url('./images/windowPart.jpg') repeat-x left top;
+	background: url('./images/centerPart.png') center/cover no-repeat;
 }
 #popupArea h1{
 text-align:left;
@@ -53,7 +53,7 @@ line-height:14px;
 right:6px;
 top:4px;
 position:absolute;
-color:#B00241;
+color:#84112b;
 font-weight:700;
 display:block;
 }
